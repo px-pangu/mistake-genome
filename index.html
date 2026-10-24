@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>错题基因库 · 自适应错题本与薄弱点溯源</title>
+<style>
+:root{
+  --orange:#F2994A; --orange-l:#FFC79B; --orange-xl:#FFF1E4;
+  --teal:#6B7F8E; --teal-l:#A9BCC6; --teal-xl:#EEF2F4;
+  --ink:#2E363C; --ink-2:#5B6873; --ink-3:#8A959D;
+  --bg:#FAF8F6; --card:#FFFFFF; --line:#EAE5E0;
+  --ok:#4E9A7E;
+  --grad:linear-gradient(120deg,#F2994A 0%,#E8A46B 42%,#8FA3AD 100%);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);
+  font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,sans-serif;
+  font-size:14px;line-height:1.75;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px 80px}
+
+/* header */
+header{background:var(--grad);color:#fff;padding:0 0 26px}
+.hd-top{max-width:1180px;margin:0 auto;padding:22px 24px 0;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:600;letter-spacing:.5px}
+.logo .dna{width:26px;height:26px;border-radius:8px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:14px}
+.tagline{opacity:.9;font-size:12.5px;margin-left:4px}
+.hd-tools{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12.5px}
+.pill{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:5px 13px;backdrop-filter:blur(4px)}
+nav{max-width:1180px;margin:18px auto 0;padding:0 24px;display:flex;gap:8px;flex-wrap:wrap}
+nav button{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);color:#fff;
+  padding:8px 16px;border-radius:999px;font-size:13px;cursor:pointer;transition:.18s;font-family:inherit}
+nav button:hover{background:rgba(255,255,255,.26)}
+nav button.on{background:#fff;color:#C97A2B;font-weight:600;border-color:#fff}
+
+/* layout */
+section{display:none;padding-top:26px}
+section.on{display:block;animation:fade .28s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 28px;margin-bottom:18px;
+  box-shadow:0 2px 14px rgba(107,127,142,.06)}
+.card h2{font-size:16px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:9px}
+.card h2 .n{width:22px;height:22px;border-radius:7px;background:var(--orange-xl);color:var(--orange);
+  font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.sub{color:var(--ink-3);font-size:12.5px;margin-bottom:18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:860px){.grid2,.grid3{grid-template-columns:1fr}.wrap{padding:0 14px 60px}}
+
+/* buttons */
+.btn{border:none;border-radius:10px;padding:9px 18px;font-size:13px;cursor:pointer;font-family:inherit;
+  background:var(--grad);color:#fff;font-weight:500;transition:.18s}
+.btn:hover{filter:brightness(1.05);transform:translateY(-1px)}
+.btn.ghost{background:#fff;color:var(--ink-2);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--teal-l);color:var(--ink)}
+.btn.sm{padding:6px 13px;font-size:12.5px}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+/* misc ui */
+.kv{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.kv span{background:var(--teal-xl);color:var(--ink-2);border-radius:8px;padding:4px 11px;font-size:12px}
+.hint{background:var(--orange-xl);border-left:3px solid var(--orange);border-radius:0 10px 10px 0;
+  padding:11px 15px;font-size:12.5px;color:#7A5533;margin-top:14px}
+.soft{background:var(--teal-xl);border-radius:12px;padding:14px 16px;font-size:12.5px;color:var(--ink-2)}
+input[type=text],textarea,select{font-family:inherit;font-size:13px;border:1px solid var(--line);border-radius:10px;
+  padding:9px 12px;background:#fff;color:var(--ink);width:100%;outline:none}
+input[type=text]:focus,textarea:focus{border-color:var(--orange-l)}
+textarea{resize:vertical;min-height:64px}
+
+/* 01 录入 */
+.drop{border:2px dashed var(--teal-l);border-radius:16px;padding:34px;text-align:center;color:var(--ink-2);
+  background:linear-gradient(180deg,#fff,#FCFAF8);cursor:pointer;transition:.18s}
+.drop:hover{border-color:var(--orange);background:#FFF9F3}
+.drop b{display:block;color:var(--ink);font-size:14.5px;margin-bottom:5px}
+.steps{margin-top:16px;display:flex;flex-direction:column;gap:9px}
+.step{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-3)}
+.step .dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);flex:none}
+.step.done .dot{background:var(--ok);border-color:var(--ok)}
+.step.done{color:var(--ink-2)}
+.step.run .dot{border-color:var(--orange);animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 5px rgba(242,153,74,.16)}}
+.prob{background:#FCFAF8;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-top:14px}
+.prob .stem{font-size:14px;line-height:1.9}
+.ltx{font-family:"Cambria Math","Times New Roman",serif;font-size:15px;background:#fff;border:1px solid var(--line);
+  border-radius:9px;padding:10px 13px;margin-top:10px;letter-spacing:.3px}
+.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 3px}
+.frac .num{border-bottom:1px solid var(--ink);padding:0 4px}
+.low{background:#FFE2C2;border-radius:3px;padding:0 2px;box-shadow:inset 0 -2px 0 var(--orange);cursor:pointer}
+.metric{display:flex;gap:22px;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px dashed var(--line)}
+.metric div{font-size:12px;color:var(--ink-3)}
+.metric b{display:block;font-size:20px;color:var(--ink);font-weight:600;line-height:1.4}
+.metric b.good{color:var(--ok)}
+.thumbs{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;margin-top:8px}
+.thumbs img{height:74px;border-radius:9px;border:1px solid var(--line);object-fit:cover}
+
+/* 02 错因 */
+.causes{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:860px){.causes{grid-template-columns:1fr 1fr}}
+.cause{border:1.5px solid var(--line);border-radius:14px;padding:18px 16px;cursor:pointer;transition:.18s;background:#fff}
+.cause:hover{border-color:var(--orange-l);transform:translateY(-2px)}
+.cause.on{border-color:var(--orange);background:var(--orange-xl)}
+.cause .ic{font-size:20px;margin-bottom:7px}
+.cause b{display:block;font-size:13.5px;margin-bottom:5px}
+.cause p{font-size:12px;color:var(--ink-3);line-height:1.65}
+.branch{background:linear-gradient(120deg,var(--orange-xl),var(--teal-xl));border-radius:14px;padding:18px 20px;margin-top:16px}
+.branch h4{font-size:13.5px;margin-bottom:8px;color:#8A5A28}
+.branch ol{margin-left:18px;font-size:12.5px;color:var(--ink-2)}
+.branch li{margin-bottom:4px}
+.gene{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;margin-top:10px;font-size:12.5px}
+.gene .badge{background:var(--teal-xl);color:var(--teal);border-radius:7px;padding:3px 9px;font-size:11.5px;flex:none}
+.gene .badge.stub{background:var(--orange-xl);color:#B96F22}
+
+/* 03 复习 */
+.queue-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.switch{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;color:var(--ink-2)}
+.sw{width:44px;height:24px;border-radius:999px;background:var(--teal-l);position:relative;cursor:pointer;transition:.2s;flex:none}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.sw.on{background:var(--grad)}
+.sw.on::after{left:22px}
+.qcard{background:linear-gradient(150deg,#FFFDFB,#F7F5F3);border:1px solid var(--line);border-radius:18px;
+  padding:30px 32px;text-align:center;min-height:150px;display:flex;flex-direction:column;justify-content:center}
+.qcard .stem{font-size:15.5px;line-height:1.95;margin-bottom:10px}
+.answerbar{display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+.answerbar .btn{min-width:104px}
+.timerbar{height:5px;border-radius:99px;background:var(--teal-xl);overflow:hidden;margin-top:18px}
+.timerbar i{display:block;height:100%;background:var(--grad);width:0%;transition:width .4s}
+.sched{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+.sched th{text-align:left;color:var(--ink-3);font-weight:500;padding:8px 10px;border-bottom:1px solid var(--line);font-size:12px}
+.sched td{padding:9px 10px;border-bottom:1px solid #F4F1EE;color:var(--ink-2)}
+.sched td b{color:var(--ink)}
+.logline{font-size:12px;color:var(--ink-3);margin-top:10px;font-family:ui-monospace,Menlo,Consolas,monospace}
+
+/* 04 图谱 */
+.kpwrap{display:grid;grid-template-columns:1.55fr 1fr;gap:18px}
+@media(max-width:860px){.kpwrap{grid-template-columns:1fr}}
+svg.tree{width:100%;height:378px;display:block}
+.node rect{cursor:pointer;transition:.18s}
+.node:hover rect{filter:brightness(.97)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink-3);margin-top:10px}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.kpdetail{background:#FCFAF8;border:1px solid var(--line);border-radius:14px;padding:18px}
+.kpdetail h4{font-size:14px;margin-bottom:8px}
+.kpdetail p{font-size:12.5px;color:var(--ink-2);margin-bottom:5px}
+.bar{height:7px;border-radius:99px;background:var(--teal-xl);overflow:hidden;margin:6px 0 12px}
+.bar i{display:block;height:100%;background:var(--grad)}
+
+/* 05 周报 */
+.heat{width:100%;overflow-x:auto}
+.heat svg{display:block}
+.scale{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-3);margin-top:12px}
+.scale i{width:26px;height:12px;border-radius:3px;display:inline-block}
+.focus{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:6px}
+@media(max-width:860px){.focus{grid-template-columns:1fr}}
+.focus .f{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.focus .f .t{font-size:11.5px;color:var(--orange);background:var(--orange-xl);border-radius:6px;padding:2px 8px;display:inline-block;margin-bottom:8px}
+.focus .f b{font-size:13.5px;display:block;margin-bottom:5px}
+.focus .f p{font-size:12px;color:var(--ink-3)}
+
+/* 06 数据中心 */
+.row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0;border-bottom:1px solid #F4F1EE;flex-wrap:wrap}
+.row:last-child{border-bottom:none}
+.row .l b{font-size:13.5px;display:block}
+.row .l p{font-size:12px;color:var(--ink-3)}
+.checks{list-style:none;font-size:12.5px;color:var(--ink-2)}
+.checks li{padding:6px 0 6px 22px;position:relative}
+.checks li::before{content:"✓";position:absolute;left:0;color:var(--ok);font-weight:700}
+
+/* rest overlay */
+.mask{position:fixed;inset:0;background:rgba(46,54,60,.42);backdrop-filter:blur(5px);display:none;
+  align-items:center;justify-content:center;z-index:99}
+.mask.on{display:flex}
+.rest{background:#fff;border-radius:22px;padding:36px 40px;max-width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.rest .emo{font-size:34px}
+.rest h3{font-size:17px;margin:10px 0 8px}
+.rest p{font-size:13px;color:var(--ink-2);line-height:1.85}
+.rest .cd{font-size:30px;font-weight:600;color:var(--orange);margin:16px 0;font-variant-numeric:tabular-nums}
+footer{text-align:center;color:var(--ink-3);font-size:12px;padding:26px 0 0}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd-top">
+    <div class="logo"><span class="dna">⌘</span>错题基因库<span class="tagline">Adaptive Learning · 诊断错因，而不是抄错题</span></div>
+    <div class="hd-tools">
+      <span class="pill">连续使用 <b id="usageMin">0</b> 分钟</span>
+      <span class="pill">今日剩余 <b id="todayLeft">8</b> 题</span>
+      <span class="pill" id="modePill">间隔模式：自适应</span>
+    </div>
+  </div>
+  <nav>
+    <button class="on" data-t="s1">01 录入台</button>
+    <button data-t="s2">02 错因诊断</button>
+    <button data-t="s3">03 每日回炉</button>
+    <button data-t="s4">04 溯源树</button>
+    <button data-t="s5">05 周报热力</button>
+    <button data-t="s6">06 数据中心</button>
+  </nav>
+</header>
+
+<div class="wrap">
+
+<!-- ============ 01 录入 ============ -->
+<section id="s1" class="on">
+  <div class="card">
+    <h2><span class="n">1</span>拍照 / 截图录入</h2>
+    <div class="sub">镜头对准题目即可，系统自动裁题、转公式、查重。单题目标 ≤ 15 秒。</div>
+
+    <div class="drop" id="drop">
+      <b>拖入图片，或点击选择</b>
+      支持拍照、试卷截图、PDF 裁图；也可直接 <span style="color:var(--orange)">Ctrl + V</span> 粘贴剪贴板图片
+      <input type="file" id="file" accept="image/*" hidden multiple>
+    </div>
+    <div class="thumbs" id="thumbs"></div>
+
+    <div class="steps" id="steps">
+      <div class="step" data-i="0"><span class="dot"></span>图像矫正与版面切分（题干 / 选项 / 作答区）</div>
+      <div class="step" data-i="1"><span class="dot"></span>文字 OCR 识别</div>
+      <div class="step" data-i="2"><span class="dot"></span>数学公式 → LaTeX（低置信字符标记）</div>
+      <div class="step" data-i="3"><span class="dot"></span>SimHash 查重与知识点初判</div>
+    </div>
+
+    <div id="ocrOut"></div>
+
+    <div class="metric">
+      <div>本次录入耗时<b id="tCost">—</b></div>
+      <div>公式置信度<b id="tConf">—</b></div>
+      <div>今日已录入<b id="tCount">0</b> 题</div>
+      <div>达标线<b>15 秒 / 题</b></div>
+    </div>
+    <div class="hint">识别结果仅供参考：任何被橙色标记的字符都需要你点一下确认或改正，改完才算录入完成。</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">+</span>题目示例库（无图也能体验）</h2>
+    <div class="sub">点击任一样题，直接走一遍识别 → 校对 → 入库流程。</div>
+    <div class="kv" id="samples"></div>
+  </div>
+</section>
+
+<!-- ============ 02 错因诊断 ============ -->
+<section id="s2">
+  <div class="card">
+    <h2><span class="n">2</span>错因四分类</h2>
+    <div class="sub">先诊断，再练习。四个错因对应四条完全不同的复习分支。</div>
+    <div class="prob" id="diagQ"><span style="color:var(--ink-3)">基因库里还没有题，先去 01 录入台拍一道。</span></div>
+
+    <div class="causes" id="causes">
+      <div class="cause" data-t="concept"><div class="ic">◍</div><b>概念不清</b><p>不知道用什么方法，或者公式背错了。</p></div>
+      <div class="cause" data-t="calc"><div class="ic">≈</div><b>计算失误</b><p>思路对，中间算错、符号抄错。</p></div>
+      <div class="cause" data-t="read"><div class="ic">◎</div><b>审题偏差</b><p>漏条件、看错单位或问的是「不正确」。</p></div>
+      <div class="cause" data-t="time"><div class="ic">◔</div><b>时间不足</b><p>会做但没写完，或者卡在某一步太久。</p></div>
+    </div>
+
+    <div id="branchBox"></div>
+
+    <div style="margin-top:16px">
+      <div style="font-size:12.5px;color:var(--ink-2);margin-bottom:7px">用一句自己的话写下来（可选，但写下的人记得更牢）</div>
+      <textarea id="selfNote" placeholder="例：我忘了极值点还要验证左右两侧单调性。"></textarea>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" id="saveDiag">存入基因库并生成复习计划</button>
+      <span class="soft" style="padding:9px 14px">单次最多批量标记 20 题</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">·</span>我的基因库</h2>
+    <div class="sub">只显示你自己的题，不排名、不对比。</div>
+    <div id="geneList"><span style="color:var(--ink-3)">暂无记录。</span></div>
+  </div>
+</section>
+
+<!-- ============ 03 复习调度 ============ -->
+<section id="s3">
+  <div class="card">
+    <h2><span class="n">3</span>每日回炉队列</h2>
+    <div class="sub">间隔由你每次作答的反应时与正确率决定；随时可以切回固定间隔。</div>
+
+    <div class="queue-head">
+      <div class="switch">
+        <span>自适应间隔（按反应时 + 正确率）</span>
+        <span class="sw on" id="swAdaptive"></span>
+      </div>
+      <div class="switch">
+        <span>回滚到固定间隔 1/2/4/7/15 天</span>
+        <span class="sw" id="swFixed"></span>
+      </div>
+      <span class="soft" style="padding:8px 14px;margin-left:auto">今日上限 8 题 · 单次 ≤ 10 分钟</span>
+    </div>
+
+    <div class="qcard" id="qcard">
+      <div class="stem" id="qStem">今天没有到期需要回炉的题目，去休息一下吧。</div>
+      <div class="ltx" id="qLatex" style="display:none;text-align:center"></div>
+      <div class="answerbar" id="ansBar"></div>
+      <div class="timerbar"><i id="sessionBar"></i></div>
+      <div style="font-size:12px;color:var(--ink-3);margin-top:8px" id="sessTxt">本次复习 0:00 / 10:00</div>
+    </div>
+
+    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <button class="btn ghost sm" id="resetQ">重置演示队列</button>
+      <span class="soft" style="padding:8px 14px">答对且果断 → 间隔拉长；答对但犹豫 → 小幅拉长；答错 → 归零并回插基础题</span>
+    </div>
+    <div class="logline" id="calcLog">等待第一次作答…</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">·</span>下次出现时间表</h2>
+    <div class="sub">自适应模式：I = I₀ · e^(k·S)，钳制在 0.5–30 天；固定模式：严格走 1/2/4/7/15。</div>
+    <table class="sched">
+      <thead><tr><th>题目</th><th>记忆强度 S</th><th>上次反应时</th><th>已复习</th><th>本次间隔</th><th>下次出现</th></tr></thead>
+      <tbody id="schedBody"></tbody>
+    </table>
+    <div class="logline" id="rollLog"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">·</span>防沉迷设置</h2>
+    <div class="row">
+      <div class="l"><b>连续使用 20 分钟强制休息</b><p>弹窗后锁屏 5 分钟，期间不能继续作答。</p></div>
+      <div class="switch"><span>已开启</span><span class="sw on" style="pointer-events:none"></span></div>
+    </div>
+    <div class="row">
+      <div class="l"><b>演示加速</b><p>把 20 分钟压缩为 60 秒，方便验收；正式环境不开放。</p></div>
+      <div class="switch"><span id="fastTxt">关闭</span><span class="sw" id="swFast"></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 知识点溯源 ============ -->
+<section id="s4">
+  <div class="card">
+    <h2><span class="n">4</span>知识点溯源树</h2>
+    <div class="sub">教材章节 → 知识点 → 前置知识点，三层可下钻；橙色环标记「前置断裂点」。</div>
+    <div class="kpwrap">
+      <div>
+        <svg class="tree" id="tree" viewBox="0 0 660 378"></svg>
+        <div class="legend">
+          <span><i style="background:#EEF2F4;border:1px solid #D8E0E4"></i>掌握良好</span>
+          <span><i style="background:#FFE2C2"></i>需要留意</span>
+          <span><i style="background:#F2994A"></i>前置断裂点</span>
+        </div>
+      </div>
+      <div class="kpdetail" id="kpDetail">
+        <h4>点一个节点看看</h4>
+        <p style="color:var(--ink-3)">系统会找真正的断裂位置：不是你错最多的那个点，而是它的前置里掌握度最低的那个。</p>
+      </div>
+    </div>
+    <div class="hint">断裂点判定规则：前置知识点掌握度 &lt; 60%，且该点自身错题 ≥ 2 次。</div>
+  </div>
+</section>
+
+<!-- ============ 05 周报 ============ -->
+<section id="s5">
+  <div class="card">
+    <h2><span class="n">5</span>薄弱基因图谱 · 本周</h2>
+    <div class="sub">只呈现你自己的变化，颜色深浅代表薄弱强度，不使用红色告警。</div>
+    <div class="heat"><svg id="heat" viewBox="0 0 720 300" width="100%"></svg></div>
+    <div class="scale">
+      <span>弱</span>
+      <i style="background:#FFF6EC"></i><i style="background:#FFE2C2"></i><i style="background:#FFC79B"></i>
+      <i style="background:#F9B673"></i><i style="background:#F2994A"></i>
+      <span>强</span>
+      <span style="margin-left:12px">纵轴：知识点 · 横轴：最近 8 周</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">·</span>三条建议，不多给</h2>
+    <div class="sub">连续 3 周没变化的点会提示换策略，而不是让你继续刷。</div>
+    <div class="focus" id="focus"></div>
+  </div>
+</section>
+
+<!-- ============ 06 数据中心 ============ -->
+<section id="s6">
+  <div class="card">
+    <h2><span class="n">6</span>存储位置</h2>
+    <div class="sub">错题默认只存在本机，开启同步后走你自己的私有云，端到端加密。</div>
+    <div class="row">
+      <div class="l"><b>本地加密存储</b><p>密钥只保存在本机，服务端无法解密。</p></div>
+      <div class="switch"><span>开启</span><span class="sw on" style="pointer-events:none"></span></div>
+    </div>
+    <div class="row">
+      <div class="l"><b>私有云同步</b><p>默认关闭。开启后仅同步你自己的数据。</p></div>
+      <div class="switch"><span id="cloudTxt">关闭</span><span class="sw" id="swCloud"></span></div>
+    </div>
+    <div class="row">
+      <div class="l"><b>同步状态</b><p id="syncTxt">未同步</p></div>
+      <button class="btn ghost sm" id="doSync">立即同步</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">·</span>导出与删除</h2>
+    <div class="sub">开放格式，随时可迁走；删除是软删，30 天后物理清除。</div>
+    <div class="row">
+      <div class="l"><b>导出 JSON</b><p>含题目、公式、错因、间隔历史，可被其他工具读取。</p></div>
+      <button class="btn ghost sm" data-exp="json">导出</button>
+    </div>
+    <div class="row">
+      <div class="l"><b>导出 Markdown</b><p>适合直接打印成纸质错题本。</p></div>
+      <button class="btn ghost sm" data-exp="md">导出</button>
+    </div>
+    <div class="row">
+      <div class="l"><b>导出 CSV</b><p>题目 + 错因 + 掌握度，便于自己再做统计。</p></div>
+      <button class="btn ghost sm" data-exp="csv">导出</button>
+    </div>
+    <div class="row">
+      <div class="l"><b>删除全部错题</b><p id="delTxt">软删保留 30 天，期间可撤销。</p></div>
+      <button class="btn ghost sm" id="doDel">删除</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">·</span>伦理与隐私承诺</h2>
+    <ul class="checks">
+      <li>无排名、无公开对比，也没有可对比他人的接口</li>
+      <li>不展示他人真实姓名与成绩</li>
+      <li>无第三方分析 SDK，第三方域名请求数为 0</li>
+      <li>不使用「差生 / 学渣 / 逆袭」等标签化措辞</li>
+      <li>连续使用 20 分钟强制休息，未成年人同规则</li>
+      <li>数据仅存本地与用户私有云，可一键全部导出或删除</li>
+    </ul>
+  </div>
+</section>
+
+<footer>错题基因库 · 原型演示 · 所有数据仅保存在当前浏览器</footer>
+</div>
+
+<!-- 休息遮罩 -->
+<div class="mask" id="mask">
+  <div class="rest">
+    <div class="emo">🌿</div>
+    <h3>已经连续学了一会儿了</h3>
+    <p>先站起来走走、看看远处。<br>这不是惩罚，记忆需要一点时间沉淀。</p>
+    <div class="cd" id="cd">05:00</div>
+    <button class="btn ghost" id="skipRest">我知道了（演示中可跳过）</button>
+  </div>
+</div>
+
+<script>
+/* ---------------- 全局 ---------------- */
+const $=(s,r)=>(r||document).querySelector(s), $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+const state={
+  mode:'adaptive',        // adaptive | fixed
+  items:[],               // 基因库
+  cards:[],               // 复习卡队列
+  todayDone:0, todayCap:8,
+  entryCount:0,
+  usageStart:Date.now(),
+  sessStart:null, sessAccum:0, sessRunning:false,
+  fast:false,
+  cloud:false,
+  deleted:false
+};
+const FIXED=[1,2,4,7,15];
+
+/* ---------------- 导航 ---------------- */
+$$('nav button').forEach(b=>b.onclick=()=>{
+  $$('nav button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  $$('section').forEach(s=>s.classList.remove('on'));
+  $('#'+b.dataset.t).classList.add('on');
+});
+
+/* ---------------- 使用时长 + 休息 ---------------- */
+setInterval(()=>{
+  const m=Math.floor((Date.now()-state.usageStart)/60000);
+  $('#usageMin').textContent=m;
+  const limitMs=state.fast?60*1000:20*60*1000;
+  if(Date.now()-state.usageStart>limitMs && !$('#mask').classList.contains('on')) openRest();
+},1000);
+
+function openRest(){
+  $('#mask').classList.add('on');
+  state.sessRunning=false;
+  let left=state.fast?30:300;
+  const tick=()=>{
+    const mm=String(Math.floor(left/60)).padStart(2,'0'), ss=String(left%60).padStart(2,'0');
+    $('#cd').textContent=mm+':'+ss;
+    if(left<=0){closeRest();return}
+    left--; setTimeout(tick,1000);
+  };tick();
+}
+function closeRest(){
+  $('#mask').classList.remove('on');
+  state.usageStart=Date.now();
+}
+$('#skipRest').onclick=closeRest;
+$('#swFast').onclick=function(){
+  state.fast=!state.fast; this.classList.toggle('on',state.fast);
+  $('#fastTxt').textContent=state.fast?'开启':'关闭';
+  state.usageStart=Date.now();
+};
+
+/* ---------------- 公式渲染 ---------------- */
+function renderLatex(src){
+  let s=src;
+  s=s.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g,'<span class="frac"><span class="num">$1</span><span class="den">$2</span></span>');
+  s=s.replace(/\\sqrt\{([^{}]+)\}/g,'√<span style="border-top:1px solid currentColor">$1</span>');
+  s=s.replace(/\^{([^{}]+)}/g,'<sup>$1</sup>').replace(/\^(\w)/g,'<sup>$1</sup>');
+  s=s.replace(/_\{([^{}]+)\}/g,'<sub>$1</sub>').replace(/_(\w)/g,'<sub>$1</sub>');
+  s=s.replace(/\\times/g,'×').replace(/\\cdot/g,'·').replace(/\\div/g,'÷').replace(/\\pm/g,'±');
+  s=s.replace(/\\leq/g,'≤').replace(/\\geq/g,'≥').replace(/\\neq/g,'≠').replace(/\\Rightarrow/g,'⇒');
+  s=s.replace(/\\alpha/g,'α').replace(/\\beta/g,'β').replace(/\\theta/g,'θ').replace(/\\pi/g,'π');
+  s=s.replace(/\\mathrm\{([^{}]+)\}/g,'$1').replace(/\\,/g,' ').replace(/\\\\/g,' ');
+  return s;
+}
+/* 低置信字符标记：把 [x] 语法转成可点击的高亮 */
+function markLow(html){
+  return html.replace(/\[([^\]]+)\]/g,'<span class="low" title="低置信字符，点击确认或改正">$1</span>');
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('.low'); if(!t) return;
+  const v=prompt('这个字符识别不准，改正它：',t.textContent);
+  if(v!==null && v.trim()!=='') t.textContent=v.trim();
+  t.classList.remove('low'); t.style.boxShadow='none'; t.style.background='#E6F3EC';
+});
+
+/* ---------------- 01 录入 ---------------- */
+const SAMPLES=[
+ {stem:'已知函数 f(x)=x³−3ax+1，若 f(x) 在 x=1 处取得极小值，求实数 a 的[值]。',
+  latex:'f\'(x)=3x^{2}-3a，\\quad f\'(1)=0 \\Rightarrow 3-3a=0 \\Rightarrow a=[1]',
+  kp:'导数与极值',chapter:'选择性必修二 · 第五章 一元函数导数'},
+ {stem:'光滑水平面上，质量 m=2kg 的物块受水平恒力 F=[6]N 作用，从静止出发，求 3s 末的速度大小。',
+  latex:'a=\\frac{F}{m}=\\frac{6}{2}=3\\ \\mathrm{m/s^{2}}，\\quad v=at=3×3=9\\ \\mathrm{m/s}',
+  kp:'牛顿第二定律',chapter:'必修一 · 第四章 牛顿运动定律'},
+ {stem:'在△ABC 中，已知 a=2，b=2√2，A=[30]°，求角 B 的大小。',
+  latex:'\\frac{a}{\\sin A}=\\frac{b}{\\sin B} \\Rightarrow \\sin B=\\frac{b\\sin A}{a}=\\frac{\\sqrt{2}}{2}',
+  kp:'正弦定理',chapter:'必修五 · 第一章 解三角形'},
+ {stem:'等比数列 {aₙ} 中，a₂=6，a₅=48，求前 [6] 项和 S₆。',
+  latex:'q^{3}=\\frac{a_{5}}{a_{2}}=8 \\Rightarrow q=2，\\quad a_{1}=3，\\quad S_{6}=\\frac{3(1-2^{6})}{1-2}=189',
+  kp:'等比数列求和',chapter:'选择性必修三 · 第五章 数列'}
+];
+let cur=null, entryStart=0;
+
+$('#drop').onclick=()=>$('#file').click();
+$('#drop').ondragover=e=>{e.preventDefault();$('#drop').style.borderColor='var(--orange)'};
+$('#drop').ondragleave=()=>$('#drop').style.borderColor='';
+$('#drop').ondrop=e=>{e.preventDefault();$('#drop').style.borderColor='';handleFiles(e.dataTransfer.files)};
+$('#file').onchange=e=>handleFiles(e.target.files);
+document.addEventListener('paste',e=>{
+  const f=Array.from(e.clipboardData?.files||[]).filter(x=>x.type.startsWith('image/'));
+  if(f.length) handleFiles(f);
+});
+function handleFiles(fs){
+  Array.from(fs).forEach(f=>{
+    if(!f.type.startsWith('image/')) return;
+    if(URL.createObjectURL){
+      const u=URL.createObjectURL(f);
+      $('#thumbs').insertAdjacentHTML('beforeend',`<img src="${u}" alt="">`);
+    }
+  });
+  runOCR(SAMPLES[Math.floor(Math.random()*SAMPLES.length)]);
+}
+
+$('#samples').innerHTML=SAMPLES.map((s,i)=>
+  `<span style="cursor:pointer;background:#fff;border:1px solid var(--line)" data-i="${i}">${esc(s.stem.slice(0,22))}…</span>`).join('');
+$('#samples').onclick=e=>{
+  const s=e.target.closest('[data-i]'); if(!s) return;
+  runOCR(SAMPLES[+s.dataset.i]);
+};
+
+function runOCR(sample){
+  entryStart=Date.now(); cur=sample;
+  const steps=$$('#steps .step');
+  steps.forEach(s=>s.className='step');
+  $('#ocrOut').innerHTML='';
+  let i=0;
+  const tick=()=>{
+    if(i>0) steps[i-1].className='step done';
+    if(i>=steps.length){finishOCR();return}
+    steps[i].className='step run';
+    i++; setTimeout(tick,260);
+  };tick();
+}
+function finishOCR(){
+  const cost=((Date.now()-entryStart)/1000).toFixed(1);
+  const conf=(94+Math.random()*4.6).toFixed(1);
+  const stemM=markLow(renderLatex(esc(cur.stem)));
+  const ltxM=markLow(renderLatex(esc(cur.latex)));
+  $('#ocrOut').innerHTML=`
+    <div class="prob">
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:6px">识别结果 · 可编辑</div>
+      <div class="stem" contenteditable="true">${stemM}</div>
+      <div class="ltx" contenteditable="true">${ltxM}</div>
+      <div class="kv"><span>${esc(cur.kp)}</span><span>${esc(cur.chapter)}</span><span>置信度 ${conf}%</span></div>
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" id="toDiag">确认无误，去诊断错因</button>
+        <span class="soft" style="padding:9px 14px">橙色标记处请点击校对</span>
+      </div>
+    </div>`;
+  $('#tCost').textContent=cost+' 秒';
+  $('#tCost').className=cost<=15?'good':'';
+  $('#tConf').textContent=conf+'%';
+  $('#tConf').className=conf>=95?'good':'';
+  $('#toDiag').onclick=()=>{
+    state.entryCount++; $('#tCount').textContent=state.entryCount;
+    if(state.entryCount>=15||cost>=12){
+      alert('已经录了一阵子了，建议先休息 5 分钟再继续。');
+    }
+    pending={stem:cur.stem,latex:cur.latex,kp:cur.kp,chapter:cur.chapter};
+    $$('nav button')[1].click(); renderDiag();
+  };
+}
+
+/* ---------------- 02 错因诊断 ---------------- */
+let pending=null, pickedCause=null;
+const BRANCH={
+  concept:{n:'概念不清',steps:['先看一遍这个知识点的前置概念（不是直接做题）','做 2 道只考概念的判断题','再回到原题重做一次','3 天后回炉，间隔按你的作答表现调整']},
+  calc:{n:'计算失误',steps:['不重做原题，先做 3 道同类限时小题（每题 90 秒）','对照标准解法找出你错在哪一步','写一句「我下次会检查什么」','2 天后回炉']},
+  read:{n:'审题偏差',steps:['回到原题，用笔圈出所有条件与单位','重述一遍题目到底在问什么','做 2 道带「不正确 / 至少」类陷阱的题']},
+  time:{n:'时间不足',steps:['把原题拆成 3 个步骤，分别计时','找出卡住的那一步，单独练同类','整题限时重做一次，目标比上次快 20%']}
+};
+function renderDiag(){
+  if(!pending){$('#diagQ').innerHTML='<span style="color:var(--ink-3)">基因库里还没有题，先去 01 录入台拍一道。</span>';return}
+  $('#diagQ').innerHTML=`<div class="stem">${esc(pending.stem)}</div>
+    <div class="ltx">${renderLatex(esc(pending.latex))}</div>
+    <div class="kv"><span>${esc(pending.kp)}</span><span>${esc(pending.chapter)}</span></div>`;
+}
+$('#causes').onclick=e=>{
+  const c=e.target.closest('.cause'); if(!c) return;
+  $$('.cause').forEach(x=>x.classList.remove('on')); c.classList.add('on');
+  pickedCause=c.dataset.t;
+  const b=BRANCH[pickedCause];
+  $('#branchBox').innerHTML=`<div class="branch"><h4>分支：${b.n} —— 接下来这样练</h4>
+    <ol>${b.steps.map(s=>`<li>${s}</li>`).join('')}</ol></div>`;
+};
+$('#saveDiag').onclick=()=>{
+  if(!pending){alert('先录入一道题。');return}
+  if(!pickedCause){alert('先选一个错因，诊断是这一步的重点。');return}
+  const exist=state.items.find(i=>i.stem===pending.stem);
+  if(exist){
+    exist.retry=(exist.retry||1)+1;
+    if(exist.cause===pickedCause&&exist.retry>=2) exist.stubborn=true;
+    exist.cause=pickedCause; exist.note=$('#selfNote').value;
+  }else{
+    state.items.push({stem:pending.stem,latex:pending.latex,kp:pending.kp,chapter:pending.chapter,
+      cause:pickedCause,note:$('#selfNote').value,retry:1,stubborn:false,s:0,reviews:0,interval:0.5,due:Date.now()});
+  }
+  buildQueue(); renderGene(); renderSchedule(); renderTree();
+  $('#selfNote').value=''; pickedCause=null; $$('.cause').forEach(x=>x.classList.remove('on')); $('#branchBox').innerHTML='';
+  alert('已存入基因库，复习计划已生成。');
+  $$('nav button')[2].click(); nextCard();
+};
+function renderGene(){
+  if(!state.items.length){$('#geneList').innerHTML='<span style="color:var(--ink-3)">暂无记录。</span>';return}
+  $('#geneList').innerHTML=state.items.map(i=>`
+    <div class="gene">
+      <span class="badge ${i.stubborn?'stub':''}">${i.stubborn?'顽固基因':'观察中'}</span>
+      <span style="flex:1">${esc(i.stem.slice(0,34))}…</span>
+      <span style="color:var(--ink-3)">${BRANCH[i.cause].n} · 第 ${i.retry} 次</span>
+    </div>`).join('');
+}
+
+/* ---------------- 03 复习调度 ---------------- */
+function buildQueue(){
+  state.cards=state.items.map(i=>({id:i.stem.slice(0,10),stem:i.stem,latex:i.latex,kp:i.kp,
+    s:i.s||0,reviews:i.reviews||0,interval:i.interval||0.5,due:i.due||Date.now(),lastRT:null}));
+}
+let curCard=null, shownAt=0;
+function nextCard(){
+  $('#todayLeft').textContent=Math.max(0,state.todayCap-state.todayDone);
+  if(state.todayDone>=state.todayCap){
+    $('#qStem').textContent='今天 8 题已经完成了，剩下的明天见 —— 不补偿加量。';
+    $('#qLatex').style.display='none'; $('#ansBar').innerHTML=''; return;
+  }
+  const due=state.cards.filter(c=>c.due<=Date.now()&&c.reviews<99);
+  if(!due.length){
+    $('#qStem').textContent='今天没有到期需要回炉的题目，去休息一下吧。';
+    $('#qLatex').style.display='none'; $('#ansBar').innerHTML=''; return;
+  }
+  curCard=due[0]; shownAt=Date.now(); state.sessStart=Date.now(); state.sessRunning=true;
+  $('#qStem').textContent=curCard.stem;
+  $('#qLatex').style.display='block'; $('#qLatex').innerHTML=renderLatex(esc(curCard.latex));
+  $('#ansBar').innerHTML=`<button class="btn" data-a="1">想起来了</button>
+    <button class="btn ghost" data-a="0">还是卡住</button>`;
+  $('#ansBar').onclick=e=>{
+    const b=e.target.closest('[data-a]'); if(!b) return;
+    answer(+b.dataset.a);
+  };
+}
+$('#resetQ').onclick=()=>{buildQueue();state.todayDone=0;renderSchedule();nextCard();};
+
+function answer(ok){
+  const rt=(Date.now()-shownAt)/1000;
+  const c=curCard;
+  let dS;
+  if(ok&&rt<=8) dS=2.0; else if(ok) dS=0.7; else dS=-(c.s);
+  c.s=Math.max(0,Math.round((c.s+dS)*100)/100);
+  c.reviews++; c.lastRT=Math.round(rt*10)/10;
+  c.interval=state.mode==='fixed'
+    ? FIXED[Math.min(c.reviews-1,4)]
+    : Math.min(30,Math.max(0.5,Math.round(0.5*Math.exp(0.55*c.s)*10)/10));
+  c.due=Date.now()+c.interval*86400000;
+  const it=state.items.find(i=>i.stem===c.stem);
+  if(it){it.s=c.s;it.reviews=c.reviews;it.interval=c.interval;it.due=c.due}
+  state.todayDone++;
+  $('#calcLog').textContent=`反应时 ${c.lastRT}s · 正确=${ok?'是':'否'} → ΔS=${dS.toFixed(1)}，S=${c.s}，下次间隔 ${c.interval} 天（${state.mode==='fixed'?'固定':'自适应'}）`;
+  renderSchedule(); renderTree();
+  $('#todayLeft').textContent=Math.max(0,state.todayCap-state.todayDone);
+  setTimeout(nextCard,420);
+}
+function renderSchedule(){
+  const tb=$('#schedBody');
+  if(!state.cards.length){tb.innerHTML='<tr><td colspan="6" style="color:var(--ink-3)">暂无排期。</td></tr>';return}
+  tb.innerHTML=state.cards.map(c=>{
+    const d=new Date(c.due);
+    return `<tr><td>${esc(c.stem.slice(0,18))}…</td><td><b>${c.s}</b></td><td>${c.lastRT==null?'—':c.lastRT+'s'}</td>
+      <td>${c.reviews} 次</td><td>${c.interval} 天</td><td>${d.getMonth()+1}/${d.getDate()}</td></tr>`;
+  }).join('');
+}
+function setMode(m){
+  state.mode=m;
+  $('#swAdaptive').classList.toggle('on',m==='adaptive');
+  $('#swFixed').classList.toggle('on',m==='fixed');
+  $('#modePill').textContent='间隔模式：'+(m==='fixed'?'固定 1/2/4/7/15':'自适应');
+  if(m==='fixed'){
+    state.cards.forEach(c=>{
+      const before=c.interval;
+      c.interval=FIXED[Math.min(Math.max(c.reviews-1,0),4)];
+      c.due=Date.now()+c.interval*86400000;
+      const it=state.items.find(i=>i.stem===c.stem); if(it){it.interval=c.interval;it.due=c.due}
+    });
+    $('#rollLog').textContent='已回滚到固定间隔：所有到期队列整体平移至 1/2/4/7/15 天序位，历史作答记录保留，可随时切回自适应。';
+  }else{
+    $('#rollLog').textContent='已切回自适应：继续使用每道题的历史 S 值计算间隔。';
+  }
+  renderSchedule();
+}
+$('#swAdaptive').onclick=()=>setMode('adaptive');
+$('#swFixed').onclick=()=>setMode('fixed');
+
+setInterval(()=>{
+  if(!state.sessRunning||!state.sessStart) return;
+  const el=Math.floor((Date.now()-state.sessStart)/1000);
+  const p=Math.min(100,el/600*100);
+  $('#sessionBar').style.width=p+'%';
+  $('#sessTxt').textContent=`本次复习 ${Math.floor(el/60)}:${String(el%60).padStart(2,'0')} / 10:00`;
+  if(el>=600){state.sessRunning=false;$('#qStem').textContent='本次复习满 10 分钟了，剩下的明天继续。';$('#ansBar').innerHTML=''}
+},1000);
+
+/* ---------------- 04 溯源树 ---------------- */
+const KP=[
+ {id:'deriv',name:'导数与极值',ch:'选择性必修二 第五章',pre:['limit','poly'],m:.42,e:4,page:'P.112'},
+ {id:'limit',name:'极限与连续',ch:'选择性必修二 第五章',pre:['func'],m:.55,e:3,page:'P.86'},
+ {id:'poly',name:'多项式运算',ch:'必修一 第二章',pre:['alg'],m:.71,e:1,page:'P.44'},
+ {id:'func',name:'函数概念与图像',ch:'必修一 第二章',pre:[],m:.83,e:0,page:'P.26'},
+ {id:'alg',name:'代数式变形',ch:'必修一 第一章',pre:[],m:.5,e:2,page:'P.18'},
+ {id:'newton',name:'牛顿第二定律',ch:'必修一 第四章',pre:['force','kin'],m:.48,e:3,page:'P.95'},
+ {id:'force',name:'受力分析',ch:'必修一 第三章',pre:['vec'],m:.62,e:2,page:'P.63'},
+ {id:'kin',name:'匀变速直线运动',ch:'必修一 第一章',pre:[],m:.78,e:1,page:'P.31'},
+ {id:'vec',name:'平面向量运算',ch:'必修四 第二章',pre:[],m:.45,e:3,page:'P.72'},
+ {id:'sine',name:'正弦定理',ch:'必修五 第一章',pre:['trig'],m:.6,e:2,page:'P.8'},
+ {id:'trig',name:'任意角三角函数',ch:'必修四 第一章',pre:[],m:.68,e:1,page:'P.5'},
+ {id:'gsum',name:'等比数列求和',ch:'选择性必修三 第五章',pre:['gseq'],m:.52,e:2,page:'P.48'},
+ {id:'gseq',name:'等比数列通项',ch:'选择性必修三 第五章',pre:[],m:.74,e:1,page:'P.41'}
+];
+function isBreak(k){
+  return k.e>=2 && k.pre.length>0 && k.pre.some(p=>{const q=KP.find(x=>x.id===p);return q&&q.m<0.6});
+}
+function renderTree(){
+  const svg=$('#tree'); svg.innerHTML='';
+  const depth={};
+  const dep=id=>{if(depth[id]!==undefined)return depth[id];const k=KP.find(x=>x.id===id);
+    depth[id]=k.pre.length?Math.max(...k.pre.map(p=>dep(p)+1)):0;return depth[id]};
+  KP.forEach(k=>dep(k.id));
+  const lanes={};
+  KP.forEach(k=>{const d=depth[k.id];(lanes[d]=lanes[d]||[]).push(k)});
+  const x=d=>38+d*150, pos={};
+  Object.keys(lanes).forEach(d=>{
+    const arr=lanes[d], h=378/(arr.length+1);
+    arr.forEach((k,i)=>{pos[k.id]={x:x(+d),y:h*(i+1)}});
+  });
+  const NS='http://www.w3.org/2000/svg';
+  const mk=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e};
+  KP.forEach(k=>k.pre.forEach(p=>{
+    const a=pos[p],b=pos[k.id];
+    svg.appendChild(mk('path',{d:`M${a.x+56} ${a.y} C ${a.x+100} ${a.y}, ${b.x-100} ${b.y}, ${b.x-6} ${b.y}`,
+      fill:'none',stroke:'#D9DEE1','stroke-width':1.4}));
+  }));
+  KP.forEach(k=>{
+    const p=pos[k.id], br=isBreak(k);
+    const fill=k.m>=.7?'#EEF2F4':(k.m>=.55?'#FFE2C2':'#FFD3AA');
+    const stroke=br?'#F2994A':'#DCE3E7', sw=br?2.2:1.2;
+    const g=mk('g',{class:'node'});
+    g.appendChild(mk('rect',{x:p.x-56,y:p.y-17,width:112,height:34,rx:9,fill:fill,stroke:stroke,'stroke-width':sw}));
+    const t1=mk('text',{x:p.x,y:p.y-1,'text-anchor':'middle','font-size':11.5,fill:'#2E363C'});t1.textContent=k.name;
+    const t2=mk('text',{x:p.x,y:p.y+12,'text-anchor':'middle','font-size':9,fill:'#8A959D'});
+    t2.textContent=(br?'断裂点 · ':'')+'掌握度 '+Math.round(k.m*100)+'%';
+    g.appendChild(t1);g.appendChild(t2);
+    g.onclick=()=>showKP(k);
+    svg.appendChild(g);
+  });
+}
+function showKP(k){
+  const pres=k.pre.map(p=>KP.find(x=>x.id===p)).filter(Boolean);
+  const weak=pres.filter(p=>p.m<0.6);
+  const br=isBreak(k);
+  $('#kpDetail').innerHTML=`
+    <h4>${esc(k.name)}</h4>
+    <p style="color:var(--ink-3)">${esc(k.ch)} · ${esc(k.page)}</p>
+    <div class="bar"><i style="width:${k.m*100}%"></i></div>
+    <p>掌握度 <b>${Math.round(k.m*100)}%</b> · 关联错题 <b>${k.e}</b> 次</p>
+    <p style="margin-top:10px">前置知识点：${pres.length?pres.map(p=>esc(p.name)+'（'+Math.round(p.m*100)+'%）').join('、'):'无'}</p>
+    <p style="color:${br?'#B96F22':'var(--ink-2)'};margin-top:10px">
+      ${br?`断裂点判定成立：真正卡住你的可能是「${esc(weak[0].name)}」，先把这里补上。`:'暂未判定为断裂点。'}</p>
+    <button class="btn sm" style="margin-top:12px" id="addBase">加入「补基础」练习</button>`;
+  $('#addBase').onclick=()=>{
+    state.items.push({stem:'【基础】'+k.name+' 的概念辨析小题',latex:'',kp:k.name,chapter:k.ch,
+      cause:'concept',note:'',retry:1,stubborn:false,s:0,reviews:0,interval:0.5,due:Date.now()});
+    buildQueue();renderSchedule();
+    alert('已加入今日队列（受每日 8 题上限约束）。');
+  };
+}
+renderTree();
+
+/* ---------------- 05 周报热力 ---------------- */
+function renderHeat(){
+  const svg=$('#heat'); svg.innerHTML='';
+  const NS='http://www.w3.org/2000/svg';
+  const mk=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e};
+  const rows=KP.slice(0,10), cols=8, cw=52, chh=26, x0=132, y0=34;
+  const colors=['#FFF6EC','#FFE9D6','#FFE2C2','#FFC79B','#F9B673','#F2994A'];
+  rows.forEach((k,r)=>{
+    const t=mk('text',{x:x0-10,y:y0+r*chh+18,'text-anchor':'end','font-size':11,fill:'#5B6873'});
+    t.textContent=k.name; svg.appendChild(t);
+    for(let c=0;c<cols;c++){
+      let v=Math.round((1-k.m)*5 + Math.sin((r+1)*(c+1))*1.2);
+      v=Math.max(0,Math.min(5,Math.round(v)));
+      svg.appendChild(mk('rect',{x:x0+c*cw,y:y0+r*chh,width:cw-5,height:chh-5,rx:5,fill:colors[v]}));
+      const tt=mk('title');tt.textContent=`${k.name} · 第 ${c+1} 周 · 强度 ${v+1}/6`;
+      svg.lastChild.appendChild(tt);
+    }
+  });
+  for(let c=0;c<cols;c++){
+    const t=mk('text',{x:x0+c*cw+16,y:y0-8,'text-anchor':'middle','font-size':10,fill:'#8A959D'});
+    t.textContent='W'+(c+1); svg.appendChild(t);
+  }
+  const f=KP.filter(isBreak).slice(0,3);
+  $('#focus').innerHTML=[
+    {t:'新增薄弱点',n:'平面向量运算',p:'最近两周错题集中在这里，它的前置是向量基本定理，建议先补概念再做综合题。'},
+    {t:'已转稳',n:'匀变速直线运动',p:'连续 3 周无新增错题，间隔已自动拉长到 7 天以上，可以先放一放。'},
+    {t:'建议换策略',n:'导数与极值',p:'连续 3 周强度没变化，继续刷同类题收益很低，试试回到前置「极限与连续」重学一遍。'}
+  ].map(x=>`<div class="f"><span class="t">${x.t}</span><b>${x.n}</b><p>${x.p}</p></div>`).join('');
+}
+renderHeat();
+
+/* ---------------- 06 数据中心 ---------------- */
+$('#swCloud').onclick=function(){
+  state.cloud=!state.cloud; this.classList.toggle('on',state.cloud);
+  $('#cloudTxt').textContent=state.cloud?'开启':'关闭';
+  $('#syncTxt').textContent=state.cloud?'等待同步':'未同步';
+};
+$('#doSync').onclick=()=>{
+  if(!state.cloud){alert('先开启私有云同步。');return}
+  $('#syncTxt').textContent='同步中…';
+  setTimeout(()=>$('#syncTxt').textContent='已同步 · '+new Date().toLocaleTimeString('zh-CN'),900);
+};
+$$('[data-exp]').forEach(b=>b.onclick=()=>{
+  const f=b.dataset.exp;
+  let out='',name='错题基因库.'+f,mime='text/plain';
+  if(f==='json'){out=JSON.stringify(state.items,null,2);mime='application/json'}
+  if(f==='md'){out='# 错题基因库导出\n\n'+state.items.map(i=>
+    `## ${i.kp}\n- 题干：${i.stem}\n- 错因：${BRANCH[i.cause].n}\n- 自述：${i.note||'—'}\n- 章节：${i.chapter}\n`).join('\n')}
+  if(f==='csv'){out='知识点,错因,自述,章节,题干\n'+state.items.map(i=>
+    [i.kp,BRANCH[i.cause].n,i.note||'',i.chapter,i.stem].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');mime='text/csv'}
+  const blob=new Blob([out],{type:mime+';charset=utf-8'});
+  const a=document.createElement('a');
+  if(window.URL&&URL.createObjectURL){a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);}
+  else alert('当前环境不支持下载，导出内容已生成（'+out.length+' 字符）。');
+});
+$('#doDel').onclick=()=>{
+  if(state.deleted){state.items=[];state.cards=[];state.deleted=false;
+    $('#delTxt').textContent='软删保留 30 天，期间可撤销。';renderGene();renderSchedule();buildQueue();
+    alert('已物理清除。');return}
+  state.deleted=true;
+  $('#delTxt').textContent='已进入软删（30 天后物理清除），期间可撤销。';
+  alert('已软删，30 天内可撤销，之后物理清除。');
+};
+
+/* 初始化 */
+buildQueue(); renderSchedule(); renderDiag();
+</script>
+</body>
+</html>
